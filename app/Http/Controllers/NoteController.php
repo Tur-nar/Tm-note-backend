@@ -202,4 +202,27 @@ class NoteController extends Controller
             'data'    => $note,
         ]);
     }
+
+    /**
+     * PATCH /api/notes/{note}/position
+     * Update a note's canvas position. Lightweight endpoint for drag-end saves.
+     */
+    public function updatePosition(Request $request, Note $note)
+    {
+        if ($note->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Note not found.'], 404);
+        }
+
+        $validated = $request->validate([
+            'x_position' => ['required', 'numeric'],
+            'y_position' => ['required', 'numeric'],
+        ]);
+
+        $note->update($validated);
+
+        return response()->json([
+            'message' => 'Position updated.',
+            'data'    => $note,
+        ]);
+    }
 }

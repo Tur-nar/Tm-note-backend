@@ -40,4 +40,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Tag::class);
     }
+
+    public function noteLinks()
+    {
+        return $this->hasMany(NoteLink::class);
+    }
 }

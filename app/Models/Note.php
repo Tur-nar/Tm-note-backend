@@ -17,6 +17,8 @@ class Note extends Model
         'color',
         'is_pinned',
         'archived_at',
+        'x_position',
+        'y_position',
         'user_id',
     ];
 
@@ -26,6 +28,8 @@ class Note extends Model
             'is_pinned'   => 'boolean',
             'archived_at' => 'datetime',
             'deleted_at'  => 'datetime',
+            'x_position'  => 'float',
+            'y_position'  => 'float',
         ];
     }
 
@@ -39,6 +43,16 @@ class Note extends Model
     public function tags()
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    public function outgoingLinks()
+    {
+        return $this->hasMany(NoteLink::class, 'source_note_id');
+    }
+
+    public function incomingLinks()
+    {
+        return $this->hasMany(NoteLink::class, 'target_note_id');
     }
 
     // ── Query Scopes ──

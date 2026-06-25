@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\NoteLinkController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -28,8 +29,12 @@ Route::middleware('auth:sanctum')->group(function () {
         // Note actions
         Route::patch('notes/{note}/archive', [NoteController::class, 'toggleArchive']);
         Route::patch('notes/{note}/pin', [NoteController::class, 'togglePin']);
+        Route::patch('notes/{note}/position', [NoteController::class, 'updatePosition']);
         Route::patch('notes/{id}/restore', [NoteController::class, 'restore']);
         Route::delete('notes/{id}/force', [NoteController::class, 'forceDelete']);
+
+        // Note links (canvas connections)
+        Route::apiResource('note-links', NoteLinkController::class)->only(['index', 'store', 'destroy']);
 
         // Tags CRUD (no show route needed)
         Route::apiResource('tags', TagController::class)->except(['show']);
