@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TagController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -17,15 +18,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'profile']);
 
-        // apiResource creates ALL 5 RESTful routes automatically:
-        // GET    /api/notes         → NoteController@index
-        // POST   /api/notes         → NoteController@store
-        // GET    /api/notes/{note}  → NoteController@show
-        // PUT    /api/notes/{note}  → NoteController@update
-        // DELETE /api/notes/{note}  → NoteController@destroy
     Route::middleware('verified')->group(function () {
+        // Trash bulk operation (must be before apiResource to avoid route conflict)
+        Route::delete('notes/trash/empty', [NoteController::class, 'emptyTrash']);
+
+        // Standard CRUD (index, store, show, update, destroy)
         Route::apiResource('notes', NoteController::class);
+
+        // Note actions
         Route::patch('notes/{note}/archive', [NoteController::class, 'toggleArchive']);
         Route::patch('notes/{note}/pin', [NoteController::class, 'togglePin']);
+        Route::patch('notes/{id}/restore', [NoteController::class, 'restore']);
+        Route::delete('notes/{id}/force', [NoteController::class, 'forceDelete']);
+
+        // Tags CRUD (no show route needed)
+        Route::apiResource('tags', TagController::class)->except(['show']);
     });
 });

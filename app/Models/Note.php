@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Note extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'title',
@@ -24,6 +25,7 @@ class Note extends Model
         return [
             'is_pinned'   => 'boolean',
             'archived_at' => 'datetime',
+            'deleted_at'  => 'datetime',
         ];
     }
 
@@ -34,16 +36,22 @@ class Note extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class);
+    }
+
     // ── Query Scopes ──
 
     /**
      * Full-text search across title and content.
+     * Uses FULLTEXT index for speed, with LIKE fallback for partial matches.
      */
     public function scopeSearch($query, string $term)
     {
         return $query->where(function ($q) use ($term) {
-            $q->where('title', 'like', "%{$term}%")
-              ->orWhere('content', 'like', "%{$term}%");
+            $q->whereFullText(['title', 'content'], $term)
+              ->orWhere('title', 'like', "%{$term}%");
         });
     }
 

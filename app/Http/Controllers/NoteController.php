@@ -11,18 +11,25 @@ class NoteController extends Controller
 {
     /**
      * GET /api/notes
-     * List authenticated user's notes (active only, paginated).
-     * Supports: ?search=keyword&sortBy=title&sortDir=asc&archived=1
+     * List authenticated user's notes (active, archived, or trashed).
+     * Supports: ?search=keyword&sortBy=title&sortDir=asc&archived=1&trashed=1&tag=slug
      */
     public function index(Request $request)
     {
-        $query = $request->user()->notes();
+        $query = $request->user()->notes()->with('tags');
 
-        // Show archived or active
-        if ($request->boolean('archived')) {
+        // Show trashed, archived, or active
+        if ($request->boolean('trashed')) {
+            $query->onlyTrashed();
+        } elseif ($request->boolean('archived')) {
             $query->archived();
         } else {
             $query->active();
+        }
+
+        // Filter by tag slug
+        if ($tag = $request->get('tag')) {
+            $query->whereHas('tags', fn ($q) => $q->where('slug', $tag));
         }
 
         // Apply filters (search + sort)
@@ -47,9 +54,16 @@ class NoteController extends Controller
 
         $note = $request->user()->notes()->create($data);
 
+        // Attach tags if provided (max 5, validated in FormRequest)
+        if ($request->has('tag_ids')) {
+            $userTagIds = $request->user()->tags()->pluck('id');
+            $validIds = collect($request->input('tag_ids'))->intersect($userTagIds);
+            $note->tags()->sync($validIds);
+        }
+
         return response()->json([
             'message' => 'Note created successfully.',
-            'data'    => $note,
+            'data'    => $note->load('tags'),
         ], 201);
     }
 
@@ -64,6 +78,8 @@ class NoteController extends Controller
             return response()->json(['message' => 'Note not found.'], 404);
         }
 
+        $note->load('tags');
+
         return response()->json([
             'data' => $note,
         ]);
@@ -77,15 +93,22 @@ class NoteController extends Controller
     {
         $note->update($request->validated());
 
+        // Sync tags if provided
+        if ($request->has('tag_ids')) {
+            $userTagIds = $request->user()->tags()->pluck('id');
+            $validIds = collect($request->input('tag_ids'))->intersect($userTagIds);
+            $note->tags()->sync($validIds);
+        }
+
         return response()->json([
             'message' => 'Note updated successfully.',
-            'data'    => $note->fresh(),
+            'data'    => $note->fresh()->load('tags'),
         ]);
     }
 
     /**
      * DELETE /api/notes/{note}
-     * Permanently delete a note.
+     * Soft-delete a note (moves to trash).
      */
     public function destroy(Request $request, Note $note)
     {
@@ -93,10 +116,52 @@ class NoteController extends Controller
             return response()->json(['message' => 'Note not found.'], 404);
         }
 
-        $note->delete();
+        $note->delete(); // SoftDeletes: sets deleted_at instead of removing
 
         return response()->json([
-            'message' => 'Note deleted successfully.',
+            'message' => 'Note moved to trash.',
+        ]);
+    }
+
+    /**
+     * PATCH /api/notes/{id}/restore
+     * Restore a soft-deleted note from the trash.
+     */
+    public function restore(Request $request, int $id)
+    {
+        $note = $request->user()->notes()->onlyTrashed()->findOrFail($id);
+        $note->restore();
+
+        return response()->json([
+            'message' => 'Note restored.',
+            'data'    => $note->load('tags'),
+        ]);
+    }
+
+    /**
+     * DELETE /api/notes/{id}/force
+     * Permanently delete a trashed note.
+     */
+    public function forceDelete(Request $request, int $id)
+    {
+        $note = $request->user()->notes()->onlyTrashed()->findOrFail($id);
+        $note->forceDelete();
+
+        return response()->json([
+            'message' => 'Note permanently deleted.',
+        ]);
+    }
+
+    /**
+     * DELETE /api/notes/trash/empty
+     * Permanently delete all trashed notes.
+     */
+    public function emptyTrash(Request $request)
+    {
+        $request->user()->notes()->onlyTrashed()->forceDelete();
+
+        return response()->json([
+            'message' => 'Trash emptied.',
         ]);
     }
 
