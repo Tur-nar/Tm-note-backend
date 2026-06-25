@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\NoteController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\TagController;
+use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NoteLinkController;
+use App\Http\Controllers\TagController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -24,7 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('notes/trash/empty', [NoteController::class, 'emptyTrash']);
 
         // Standard CRUD (index, store, show, update, destroy)
-        Route::apiResource('notes', NoteController::class);
+        Route::apiResource('notes', NoteController::class)->names('api.notes');
 
         // Note actions
         Route::patch('notes/{note}/archive', [NoteController::class, 'toggleArchive']);

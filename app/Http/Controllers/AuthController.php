@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -45,43 +45,43 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validated = $request->validate([
-            "name" => ["required", "string", "max:255"],
-            "email" => ["required", "email", "unique:users"],
-            "password" => ["required", "string", "confirmed", Password::defaults()],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users'],
+            'password' => ['required', 'string', 'confirmed', Password::defaults()],
         ]);
 
         $user = User::create($validated);
 
         event(new Registered($user));
 
-        $token = $user->createToken("auth_token")->plainTextToken;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'message' => 'Registeration successful. Please check your email for verification',
-            "data" => $user,
+            'data' => $user,
         ], 201)->withCookie($this->authTokenCookie($token));
     }
 
     public function login(Request $request)
     {
         $validated = $request->validate([
-            'email'     => ['required', 'string', 'email'],
-            'password'  => ['required', 'string']
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
         ]);
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Invalid credentials.'
+                'message' => 'Invalid credentials.',
             ], 401);
         }
 
-        $token = $user->createToken("auth_token")->plainTextToken;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            "message" => 'Login successful',
-            "data" => $user,
+            'message' => 'Login successful',
+            'data' => $user,
         ], 200)->withCookie($this->authTokenCookie($token));
     }
 
@@ -89,12 +89,13 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        if( !$user ) {
+        if (! $user) {
             return response()->json([
-                'message' => 'Unauthenticated user.'
+                'message' => 'Unauthenticated user.',
             ], 401);
         }
         $token = $user->createToken('')->plainTextToken;
+
         return response()->json([
             'message' => 'Profile fetched successfully.',
             'data' => $user,
@@ -130,7 +131,8 @@ class AuthController extends Controller
         return redirect()->away("{$frontendUrl}/verify-email?status=verified");
     }
 
-    public function resendVerificationEmail(Request $request) {
+    public function resendVerificationEmail(Request $request)
+    {
         if ($request->user()->hasVerifiedEmail()) {
             return response()->json([
                 'message' => 'You are already verified.',

@@ -38,17 +38,17 @@ class NoteLinkController extends Controller
 
         // Verify the user owns both notes
         $userNoteIds = $request->user()->notes()->pluck('id');
-        if (!$userNoteIds->contains($validated['source_note_id']) || !$userNoteIds->contains($validated['target_note_id'])) {
+        if (! $userNoteIds->contains($validated['source_note_id']) || ! $userNoteIds->contains($validated['target_note_id'])) {
             return response()->json(['message' => 'You can only link your own notes.'], 403);
         }
 
         // Check for duplicate (in either direction)
         $exists = NoteLink::where(function ($q) use ($validated) {
             $q->where('source_note_id', $validated['source_note_id'])
-              ->where('target_note_id', $validated['target_note_id']);
+                ->where('target_note_id', $validated['target_note_id']);
         })->orWhere(function ($q) use ($validated) {
             $q->where('source_note_id', $validated['target_note_id'])
-              ->where('target_note_id', $validated['source_note_id']);
+                ->where('target_note_id', $validated['source_note_id']);
         })->exists();
 
         if ($exists) {
@@ -58,14 +58,14 @@ class NoteLinkController extends Controller
         $link = NoteLink::create([
             'source_note_id' => $validated['source_note_id'],
             'target_note_id' => $validated['target_note_id'],
-            'user_id'        => $userId,
+            'user_id' => $userId,
         ]);
 
         $link->load(['sourceNote:id,title,x_position,y_position,color', 'targetNote:id,title,x_position,y_position,color']);
 
         return response()->json([
             'message' => 'Notes linked successfully.',
-            'data'    => $link,
+            'data' => $link,
         ], 201);
     }
 

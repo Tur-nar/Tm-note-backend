@@ -25,11 +25,11 @@ class Note extends Model
     protected function casts(): array
     {
         return [
-            'is_pinned'   => 'boolean',
+            'is_pinned' => 'boolean',
             'archived_at' => 'datetime',
-            'deleted_at'  => 'datetime',
-            'x_position'  => 'float',
-            'y_position'  => 'float',
+            'deleted_at' => 'datetime',
+            'x_position' => 'float',
+            'y_position' => 'float',
         ];
     }
 
@@ -65,7 +65,7 @@ class Note extends Model
     {
         return $query->where(function ($q) use ($term) {
             $q->whereFullText(['title', 'content'], $term)
-              ->orWhere('title', 'like', "%{$term}%");
+                ->orWhere('title', 'like', "%{$term}%");
         });
     }
 
@@ -74,11 +74,11 @@ class Note extends Model
      */
     public function scopeFilter($query, array $filters)
     {
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->search($filters['search']);
         }
 
-        $sortBy  = $filters['sortBy']  ?? 'updated_at';
+        $sortBy = $filters['sortBy'] ?? 'updated_at';
         $sortDir = $filters['sortDir'] ?? 'desc';
         $query->orderBy($sortBy, $sortDir);
     }

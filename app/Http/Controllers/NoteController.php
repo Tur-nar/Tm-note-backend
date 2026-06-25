@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Note;
-use Illuminate\Http\Request;
 use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
+use App\Models\Note;
+use Illuminate\Http\Request;
 
 class NoteController extends Controller
 {
@@ -63,7 +63,7 @@ class NoteController extends Controller
 
         return response()->json([
             'message' => 'Note created successfully.',
-            'data'    => $note->load('tags'),
+            'data' => $note->load('tags'),
         ], 201);
     }
 
@@ -102,7 +102,7 @@ class NoteController extends Controller
 
         return response()->json([
             'message' => 'Note updated successfully.',
-            'data'    => $note->fresh()->load('tags'),
+            'data' => $note->fresh()->load('tags'),
         ]);
     }
 
@@ -134,7 +134,7 @@ class NoteController extends Controller
 
         return response()->json([
             'message' => 'Note restored.',
-            'data'    => $note->load('tags'),
+            'data' => $note->load('tags'),
         ]);
     }
 
@@ -180,7 +180,7 @@ class NoteController extends Controller
 
         return response()->json([
             'message' => $note->archived_at ? 'Note archived.' : 'Note unarchived.',
-            'data'    => $note,
+            'data' => $note,
         ]);
     }
 
@@ -194,12 +194,12 @@ class NoteController extends Controller
             return response()->json(['message' => 'Note not found.'], 404);
         }
 
-        $note->is_pinned = !$note->is_pinned;
+        $note->is_pinned = ! $note->is_pinned;
         $note->save();
 
         return response()->json([
             'message' => $note->is_pinned ? 'Note pinned.' : 'Note unpinned.',
-            'data'    => $note,
+            'data' => $note,
         ]);
     }
 
@@ -222,7 +222,7 @@ class NoteController extends Controller
 
         return response()->json([
             'message' => 'Position updated.',
-            'data'    => $note,
+            'data' => $note,
         ]);
     }
 }

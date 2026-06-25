@@ -20,7 +20,7 @@ class NoteFactory extends Factory
         return [
             'title' => fake()->realText(100),
             'content' => fake()->realText(2000),
-            'user_id' => 1
+            'user_id' => 1,
         ];
     }
 }

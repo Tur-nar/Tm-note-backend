@@ -29,7 +29,7 @@ class TagController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'  => ['required', 'string', 'max:50'],
+            'name' => ['required', 'string', 'max:50'],
             'color' => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
@@ -40,7 +40,7 @@ class TagController extends Controller
         if ($existing) {
             return response()->json([
                 'message' => 'Tag already exists.',
-                'data'    => $existing,
+                'data' => $existing,
             ], 409);
         }
 
@@ -48,7 +48,7 @@ class TagController extends Controller
 
         return response()->json([
             'message' => 'Tag created.',
-            'data'    => $tag,
+            'data' => $tag,
         ], 201);
     }
 
@@ -63,7 +63,7 @@ class TagController extends Controller
         }
 
         $validated = $request->validate([
-            'name'  => ['sometimes', 'string', 'max:50'],
+            'name' => ['sometimes', 'string', 'max:50'],
             'color' => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
@@ -76,7 +76,7 @@ class TagController extends Controller
 
         return response()->json([
             'message' => 'Tag updated.',
-            'data'    => $tag->fresh(),
+            'data' => $tag->fresh(),
         ]);
     }
 

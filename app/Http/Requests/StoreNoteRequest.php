@@ -14,15 +14,15 @@ class StoreNoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'          => ['required', 'string', 'max:255'],
-            'content'        => ['nullable', 'string'],
+            'title' => ['required', 'string', 'max:255'],
+            'content' => ['nullable', 'string'],
             'content_format' => ['sometimes', 'in:html,markdown'],
-            'color'          => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'is_pinned'      => ['sometimes', 'boolean'],
-            'x_position'     => ['sometimes', 'numeric'],
-            'y_position'     => ['sometimes', 'numeric'],
-            'tag_ids'        => ['sometimes', 'array', 'max:5'],
-            'tag_ids.*'      => ['integer', 'exists:tags,id'],
+            'color' => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'is_pinned' => ['sometimes', 'boolean'],
+            'x_position' => ['sometimes', 'numeric'],
+            'y_position' => ['sometimes', 'numeric'],
+            'tag_ids' => ['sometimes', 'array', 'max:5'],
+            'tag_ids.*' => ['integer', 'exists:tags,id'],
         ];
     }
 }
