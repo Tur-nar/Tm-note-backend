@@ -13,7 +13,19 @@ return new class extends Migration
     {
         Schema::create('note_shares', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('note_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('shared_with_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('shared_email');
+            $table->enum('permission', ['view', 'edit', 'admin'])->default('view');
+            $table->enum('status', ['pending', 'accepted', 'declined'])->default('pending');
+            $table->string('invite_token', 64)->unique();
+            $table->timestamp('accepted_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
             $table->timestamps();
+
+            // One share per note per email
+            $table->unique(['note_id', 'shared_email']);
         });
     }
 

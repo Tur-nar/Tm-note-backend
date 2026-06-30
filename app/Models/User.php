@@ -45,4 +45,66 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(NoteLink::class);
     }
+
+    // ── Sharing Relationships ──
+
+    /**
+     * Notes shared WITH this user (accepted invitations only).
+     */
+    public function sharedNotes()
+    {
+        return $this->belongsToMany(Note::class, 'note_shares', 'shared_with_id', 'note_id')
+                    ->withPivot('permission', 'status', 'owner_id')
+                    ->wherePivot('status', 'accepted');
+    }
+
+    /**
+     * Note share invitations sent BY this user.
+     */
+    public function sentNoteShares()
+    {
+        return $this->hasMany(NoteShare::class, 'owner_id');
+    }
+
+    /**
+     * Note share invitations received BY this user.
+     */
+    public function receivedNoteShares()
+    {
+        return $this->hasMany(NoteShare::class, 'shared_with_id');
+    }
+
+    /**
+     * Canvas share invitations sent BY this user.
+     */
+    public function sentCanvasShares()
+    {
+        return $this->hasMany(CanvasShare::class, 'owner_id');
+    }
+
+    /**
+     * Canvas share invitations received BY this user.
+     */
+    public function receivedCanvasShares()
+    {
+        return $this->hasMany(CanvasShare::class, 'shared_with_id');
+    }
+
+    /**
+     * Check if user can access a note (owner or accepted collaborator).
+     * Used for broadcast channel auth.
+     */
+    public function canViewNote(int $noteId): bool
+    {
+        // Owner check
+        if ($this->notes()->where('id', $noteId)->exists()) {
+            return true;
+        }
+
+        // Collaborator check
+        return NoteShare::where('note_id', $noteId)
+            ->where('shared_with_id', $this->id)
+            ->where('status', 'accepted')
+            ->exists();
+    }
 }

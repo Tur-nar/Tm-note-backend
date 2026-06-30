@@ -55,6 +55,18 @@ class Note extends Model
         return $this->hasMany(NoteLink::class, 'target_note_id');
     }
 
+    public function shares()
+    {
+        return $this->hasMany(NoteShare::class);
+    }
+
+    public function sharedUsers()
+    {
+        return $this->belongsToMany(User::class, 'note_shares', 'note_id', 'shared_with_id')
+                    ->withPivot('permission', 'status')
+                    ->wherePivot('status', 'accepted');
+    }
+
     // ── Query Scopes ──
 
     /**

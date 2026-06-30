@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CanvasShareController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NoteLinkController;
+use App\Http\Controllers\NoteShareController;
 use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,5 +40,35 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Tags CRUD (no show route needed)
         Route::apiResource('tags', TagController::class)->except(['show']);
+
+        // ── Note Sharing ──
+        Route::prefix('note-shares')->group(function () {
+            Route::get('/', [NoteShareController::class, 'index']);
+            Route::get('/received', [NoteShareController::class, 'sharedWithMe']);
+            Route::post('/', [NoteShareController::class, 'store']);
+            Route::patch('/{noteShare}', [NoteShareController::class, 'update']);
+            Route::delete('/{noteShare}', [NoteShareController::class, 'destroy']);
+        });
+
+        // Accept/decline share invitations
+        Route::post('/note-shares/accept/{token}', [NoteShareController::class, 'accept']);
+        Route::post('/note-shares/decline/{token}', [NoteShareController::class, 'decline']);
+
+        // Shared note access (permission-checked, uses {noteId} to avoid NoteController binding conflict)
+        Route::get('/shared-notes/{noteId}', [NoteShareController::class, 'showSharedNote']);
+        Route::put('/shared-notes/{noteId}', [NoteShareController::class, 'updateSharedNote']);
+
+        // ── Canvas Sharing ──
+        Route::prefix('canvas-shares')->group(function () {
+            Route::get('/', [CanvasShareController::class, 'index']);
+            Route::get('/received', [CanvasShareController::class, 'received']);
+            Route::post('/', [CanvasShareController::class, 'store']);
+            Route::delete('/{canvasShare}', [CanvasShareController::class, 'destroy']);
+        });
+
+        Route::post('/canvas-shares/accept/{token}', [CanvasShareController::class, 'accept']);
+        Route::post('/canvas-shares/decline/{token}', [CanvasShareController::class, 'decline']);
+        Route::get('/shared-canvas/{ownerId}', [CanvasShareController::class, 'sharedCanvas']);
     });
 });
+
