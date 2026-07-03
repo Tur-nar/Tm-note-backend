@@ -6,6 +6,8 @@ use App\Mail\ShareInvitationMail;
 use App\Models\Note;
 use App\Models\NoteShare;
 use App\Models\User;
+use App\Events\NoteContentUpdated;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -92,6 +94,23 @@ class NoteShareController extends Controller
 
         $share->load(['note:id,title,color', 'sharedWith:id,name,email']);
 
+        // Notify the recipient (if they're a registered user)
+        if ($targetUser) {
+            NotificationService::create(
+                userId: $targetUser->id,
+                type: 'share_invitation',
+                title: 'New note shared with you',
+                message: $request->user()->name . ' shared "' . $note->title . '" with you.',
+                data: [
+                    'note_id' => $note->id,
+                    'note_title' => $note->title,
+                    'shared_by' => $request->user()->name,
+                    'permission' => $validated['permission'],
+                    'share_id' => $share->id,
+                ]
+            );
+        }
+
         return response()->json([
             'message' => 'Note shared successfully. Invitation sent.',
             'data' => $share,
@@ -172,10 +191,35 @@ class NoteShareController extends Controller
             ]);
         }
 
+        // Notify the share owner
+        $this->notifyOwnerOfAcceptance($share, $user);
+
         return response()->json([
             'message' => 'Invitation accepted.',
             'data' => $share->load(['note:id,title,color', 'owner:id,name,email']),
         ]);
+    }
+
+    /**
+     * After accepting, notify the share owner.
+     */
+    private function notifyOwnerOfAcceptance(NoteShare $share, ?User $acceptedBy): void
+    {
+        $note = $share->note;
+        $acceptorName = $acceptedBy?->name ?? $share->shared_email;
+
+        NotificationService::create(
+            userId: $share->owner_id,
+            type: 'share_accepted',
+            title: 'Invitation accepted',
+            message: $acceptorName . ' accepted your invitation to "' . ($note->title ?? 'Untitled') . '".',
+            data: [
+                'note_id' => $note?->id,
+                'note_title' => $note?->title,
+                'accepted_by' => $acceptorName,
+                'share_id' => $share->id,
+            ]
+        );
     }
 
     /**
@@ -251,10 +295,14 @@ class NoteShareController extends Controller
             ]);
 
             $note->update($validated);
+            $freshNote = $note->fresh()->load('tags');
+
+            // Broadcast to collaborators
+            broadcast(new NoteContentUpdated($freshNote, $user->id, $user->name))->toOthers();
 
             return response()->json([
                 'message' => 'Note updated.',
-                'data' => $note->fresh()->load('tags'),
+                'data' => $freshNote,
             ]);
         }
 
@@ -277,10 +325,29 @@ class NoteShareController extends Controller
         ]);
 
         $note->update($validated);
+        $freshNote = $note->fresh()->load('tags');
+
+        // Broadcast to collaborators
+        broadcast(new NoteContentUpdated($freshNote, $user->id, $user->name))->toOthers();
+
+        // Notify the note owner that a collaborator edited their note (5-min debounce)
+        NotificationService::create(
+            userId: $note->user_id,
+            type: 'note_updated',
+            title: 'Note edited',
+            message: $user->name . ' edited "' . $freshNote->title . '".',
+            data: [
+                'note_id' => $note->id,
+                'note_title' => $freshNote->title,
+                'updated_by' => $user->id,
+                'updated_by_name' => $user->name,
+            ],
+            debounce: true
+        );
 
         return response()->json([
             'message' => 'Note updated.',
-            'data' => $note->fresh()->load('tags'),
+            'data' => $freshNote,
         ]);
     }
 }

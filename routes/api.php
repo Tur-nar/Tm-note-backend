@@ -5,7 +5,9 @@ use App\Http\Controllers\CanvasShareController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NoteLinkController;
 use App\Http\Controllers\NoteShareController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TagController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -20,6 +22,9 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('throttle:6,1');
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'profile']);
+
+    // Broadcasting auth for presence channels (Sanctum cookie auth)
+    Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
     Route::middleware('verified')->group(function () {
         // Trash bulk operation (must be before apiResource to avoid route conflict)
@@ -69,6 +74,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/canvas-shares/accept/{token}', [CanvasShareController::class, 'accept']);
         Route::post('/canvas-shares/decline/{token}', [CanvasShareController::class, 'decline']);
         Route::get('/shared-canvas/{ownerId}', [CanvasShareController::class, 'sharedCanvas']);
+
+        // ── Notifications ──
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+            Route::patch('/{notification}/read', [NotificationController::class, 'markRead']);
+            Route::post('/mark-all-read', [NotificationController::class, 'markAllRead']);
+        });
     });
 });
 

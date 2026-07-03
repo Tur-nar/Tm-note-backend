@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
+use App\Events\NoteContentUpdated;
 use App\Models\Note;
 use Illuminate\Http\Request;
 
@@ -100,9 +101,20 @@ class NoteController extends Controller
             $note->tags()->sync($validIds);
         }
 
+        $freshNote = $note->fresh()->load('tags');
+
+        // Broadcast content update to collaborators (only for content/title changes)
+        if ($request->hasAny(['title', 'content', 'content_format'])) {
+            broadcast(new NoteContentUpdated(
+                $freshNote,
+                $request->user()->id,
+                $request->user()->name
+            ))->toOthers();
+        }
+
         return response()->json([
             'message' => 'Note updated successfully.',
-            'data' => $note->fresh()->load('tags'),
+            'data' => $freshNote,
         ]);
     }
 

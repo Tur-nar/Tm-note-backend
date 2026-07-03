@@ -57,3 +57,16 @@ Broadcast::channel('note.{noteId}', function ($user, $noteId) {
 
     return false;
 });
+
+/**
+ * Presence channel for canvas workspace.
+ * Any authenticated user can join their own canvas.
+ * Returns user metadata for presence and live cursors.
+ */
+Broadcast::channel('canvas.main', function ($user) {
+    return [
+        'id' => $user->id,
+        'name' => $user->name,
+        'role' => 'owner',
+    ];
+});
