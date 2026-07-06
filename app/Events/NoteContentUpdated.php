@@ -2,42 +2,40 @@
 
 namespace App\Events;
 
-use App\Models\Note;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Broadcast when a note's content is updated.
+ * Lightweight broadcast signal when a note's content is updated.
  *
- * This event is dispatched after a note is saved (by owner or collaborator).
- * All users in the note's presence channel receive the update, allowing
- * their editors to reflect changes in real-time without refreshing.
+ * IMPORTANT: Does NOT include the full note content in the payload.
+ * Reverb/Pusher has a ~10KB message size limit, and note content can
+ * easily exceed that. Instead, we send only a small signal with metadata.
+ * The frontend receives this signal and fetches the latest content via API.
  *
  * Channel: presence-note.{noteId}
  * Event name: NoteContentUpdated
+ *
+ * Uses ShouldBroadcastNow to bypass the queue and broadcast immediately.
  */
-class NoteContentUpdated implements ShouldBroadcast
+class NoteContentUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $noteId;
-    public string $title;
-    public string $content;
-    public string $contentFormat;
     public int $updatedBy;
     public string $updatedByName;
+    public int $timestamp;
 
-    public function __construct(Note $note, int $updatedBy, string $updatedByName)
+    public function __construct(int $noteId, int $updatedBy, string $updatedByName)
     {
-        $this->noteId = $note->id;
-        $this->title = $note->title;
-        $this->content = $note->content ?? '';
-        $this->contentFormat = $note->content_format;
+        $this->noteId = $noteId;
         $this->updatedBy = $updatedBy;
         $this->updatedByName = $updatedByName;
+        $this->timestamp = time();
     }
 
     /**
@@ -52,17 +50,17 @@ class NoteContentUpdated implements ShouldBroadcast
     }
 
     /**
-     * Data payload sent to connected clients.
+     * Lightweight payload — no content, just a "something changed" signal.
+     * The frontend will re-fetch the note via GET /api/notes/{id} or
+     * GET /api/shared-notes/{id} upon receiving this.
      */
     public function broadcastWith(): array
     {
         return [
             'noteId' => $this->noteId,
-            'title' => $this->title,
-            'content' => $this->content,
-            'content_format' => $this->contentFormat,
             'updated_by' => $this->updatedBy,
             'updated_by_name' => $this->updatedByName,
+            'timestamp' => $this->timestamp,
         ];
     }
 }

@@ -298,7 +298,7 @@ class NoteShareController extends Controller
             $freshNote = $note->fresh()->load('tags');
 
             // Broadcast to collaborators
-            broadcast(new NoteContentUpdated($freshNote, $user->id, $user->name))->toOthers();
+            broadcast(new NoteContentUpdated($note->id, $user->id, $user->name))->toOthers();
 
             return response()->json([
                 'message' => 'Note updated.',
@@ -328,7 +328,7 @@ class NoteShareController extends Controller
         $freshNote = $note->fresh()->load('tags');
 
         // Broadcast to collaborators
-        broadcast(new NoteContentUpdated($freshNote, $user->id, $user->name))->toOthers();
+        broadcast(new NoteContentUpdated($note->id, $user->id, $user->name))->toOthers();
 
         // Notify the note owner that a collaborator edited their note (5-min debounce)
         NotificationService::create(

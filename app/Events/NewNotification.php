@@ -5,7 +5,7 @@ namespace App\Events;
 use App\Models\Notification;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -15,8 +15,10 @@ use Illuminate\Queue\SerializesModels;
  * This allows the frontend notification bell to update in real-time
  * without polling. The user receives the full notification payload
  * on their private channel: App.Models.User.{userId}
+ *
+ * Uses ShouldBroadcastNow to bypass the queue and deliver instantly.
  */
-class NewNotification implements ShouldBroadcast
+class NewNotification implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\ShareInvitationMail;
 use App\Models\CanvasShare;
 use App\Models\Note;
+use App\Models\NoteLink;
 use App\Models\NoteShare;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -153,7 +154,9 @@ class CanvasShareController extends Controller
     /**
      * GET /api/shared-canvas/{ownerId}
      * View a shared canvas (permission-checked).
-     * Returns the owner's notes that are also shared with the viewer.
+     * Returns ALL of the owner's notes so the viewer sees the full canvas layout.
+     * Includes `shared_note_ids` — the subset of notes individually shared
+     * with the viewer — so the frontend can gate click/edit interactions.
      */
     public function sharedCanvas(Request $request, int $ownerId)
     {
@@ -169,18 +172,27 @@ class CanvasShareController extends Controller
             return response()->json(['message' => 'You do not have access to this canvas.'], 403);
         }
 
-        // Get notes shared with this user from this owner
+        // Get ALL of the owner's notes (SoftDeletes auto-excludes trashed)
+        $notes = Note::where('user_id', $ownerId)
+            ->with('tags')
+            ->get();
+
+        // Get note IDs that are individually shared with this viewer (for interaction gating)
         $sharedNoteIds = NoteShare::where('owner_id', $ownerId)
             ->where('shared_with_id', $user->id)
             ->accepted()
-            ->pluck('note_id');
+            ->pluck('note_id')
+            ->toArray();
 
-        $notes = Note::whereIn('id', $sharedNoteIds)
-            ->with('tags')
+        // Get the owner's note links so connection lines render on the shared canvas
+        $noteLinks = NoteLink::where('user_id', $ownerId)
+            ->with(['sourceNote:id,title,x_position,y_position,color', 'targetNote:id,title,x_position,y_position,color'])
             ->get();
 
         return response()->json([
             'data' => $notes,
+            'note_links' => $noteLinks,
+            'shared_note_ids' => $sharedNoteIds,
             'permission' => $canvasShare->permission,
             'owner' => [
                 'id' => $canvasShare->owner->id,

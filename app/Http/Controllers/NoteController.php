@@ -106,7 +106,7 @@ class NoteController extends Controller
         // Broadcast content update to collaborators (only for content/title changes)
         if ($request->hasAny(['title', 'content', 'content_format'])) {
             broadcast(new NoteContentUpdated(
-                $freshNote,
+                $note->id,
                 $request->user()->id,
                 $request->user()->name
             ))->toOthers();
